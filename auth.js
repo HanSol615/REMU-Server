@@ -91,7 +91,7 @@ const login = async (req, res) => {
 
       // maxAge 설정X: 세션쿠키(브라우저 닫을 때 삭제됨), 604800: 10분(?) maxAge 단위 이상..확인 후 수정 필요
       res.cookie('refreshToken', refreshToken, { httpOnly : true, secure: process.env.NODE_ENV === 'production', maxAge: 604800 * 6 * 24 * 7});
-      res.cookie('accessToken', accessToken, { httpOnly : true, secure: process.env.NODE_ENV === 'production', maxAge: 604800 * 3});
+      res.cookie('accessToken', accessToken, { httpOnly : true, secure: process.env.NODE_ENV === 'production', maxAge: 604800 * 6});
 
       return res.status(StatusCodes.OK).json({ message: '로그인에 성공하였습니다', accessToken: accessToken });
     } catch(err){
