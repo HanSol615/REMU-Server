@@ -85,7 +85,6 @@ const login = async (req, res) => {
 
       const accessToken = generateToken(loginUser, process.env.PRIVATE_KEY, '1h');
       const refreshToken = generateToken(loginUser, process.env.PRIVATE_KEY, '7d');
-      console.log(accessToken, refreshToken);
 
       // Refresh Token을 데이터베이스에 저장
       await conn.query('UPDATE user SET refresh_token = ? WHERE email = ?', [refreshToken, email]);
@@ -103,7 +102,6 @@ const login = async (req, res) => {
 
 const logout = async(req, res) => {
   const accessToken = req.cookies.accessToken;
-  console.log(req.cookies);
 
   if (!accessToken) {
     return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Access Token이 만료되었습니다.' });
