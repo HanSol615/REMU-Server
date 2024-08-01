@@ -90,8 +90,9 @@ const login = async (req, res) => {
       await conn.query('UPDATE user SET refresh_token = ? WHERE email = ?', [refreshToken, email]);
 
       // maxAge 설정X: 세션쿠키(브라우저 닫을 때 삭제됨), 604800: 10분(?) maxAge 단위 이상..확인 후 수정 필요
-      res.cookie('refreshToken', refreshToken, { httpOnly : true, secure: process.env.NODE_ENV === 'production', maxAge: 604800 * 6 * 24 * 7});
-      res.cookie('accessToken', accessToken, { httpOnly : true, secure: process.env.NODE_ENV === 'production', maxAge: 604800 * 6});
+      // httpOnly: XSS 방지 / secure: 쿠키 https로만 전송, 네트워크 도청 방지 / sameSite: CSRF 방지(None, Strict, Lax) -> 종합적으로 쿠키 탈취 방지
+      res.cookie('accessToken', accessToken, { httpOnly : true, secure: process.env.NODE_ENV === 'production', maxAge: 604800 * 6, sameSite: 'Strict'});
+      res.cookie('refreshToken', refreshToken, { httpOnly : true, secure: process.env.NODE_ENV === 'production', maxAge: 604800 * 6 * 24 * 7, sameSite: 'Strict'});
 
       return res.status(StatusCodes.OK).json({ message: '로그인에 성공하였습니다', accessToken: accessToken });
     } catch(err){
