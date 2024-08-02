@@ -124,7 +124,7 @@ const logout = async(req, res) => {
   }
 };
 
-const changePassword = async (req, res) => {
+const password = async (req, res) => {
   const { currentPassword, newPassword, confirmPassword } = req.body;
 
   if (!currentPassword || !newPassword || !confirmPassword) {
@@ -168,7 +168,7 @@ const changePassword = async (req, res) => {
   }
 };
 
-const deleteUser = async(req, res) => {
+const account = async(req, res) => {
   const accessToken = req.cookies.accessToken;
   const refreshToken = req.cookies.refreshToken;
 
@@ -200,6 +200,6 @@ module.exports = {
   join,
   login,
   logout,
-  changePassword,
-  deleteUser
+  password,
+  account
 };
