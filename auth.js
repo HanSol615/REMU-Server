@@ -83,33 +83,30 @@ const login = async (req, res) => {
         return res.status(StatusCodes.UNAUTHORIZED).json({ message: '비밀번호가 틀렸습니다.' });
       }
 
+      // 1m으로 변경 후 테스트 완료
       const accessToken = generateToken(loginUser, process.env.PRIVATE_KEY, '1h');
       const refreshToken = generateToken(loginUser, process.env.PRIVATE_KEY, '7d');
 
       // Refresh Token을 데이터베이스에 저장
       await conn.query('UPDATE user SET refresh_token = ? WHERE email = ?', [refreshToken, email]);
 
-      // maxAge 설정X: 세션쿠키(브라우저 닫을 때 삭제됨), 604800: 10분(?) maxAge 단위 이상..확인 후 수정 필요
+      // maxAge or expires 설정X: 세션쿠키(브라우저 닫을 때 삭제됨), 밀리초 단위
       // httpOnly: XSS 방지 / secure: 쿠키 https로만 전송, 네트워크 도청 방지 / sameSite: CSRF 방지(None, Strict, Lax) -> 종합적으로 쿠키 탈취 방지
-      res.cookie('accessToken', accessToken, { httpOnly : true, secure: process.env.NODE_ENV === 'production', maxAge: 604800 * 6, sameSite: 'Strict'});
-      res.cookie('refreshToken', refreshToken, { httpOnly : true, secure: process.env.NODE_ENV === 'production', maxAge: 604800 * 6 * 24 * 7, sameSite: 'Strict'});
+      const now = new Date();
+      res.cookie('accessToken', accessToken, { httpOnly : true, secure: process.env.NODE_ENV === 'production', expires: new Date(now.getTime() + 1 * 60 * 60 * 1000), sameSite: 'Lax'}); // 쿠키 1시간 동안 유효
+      res.cookie('refreshToken', refreshToken, { httpOnly : true, secure: process.env.NODE_ENV === 'production', expires: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), sameSite: 'Lax'}); // 쿠키 7일 동안 유효
 
       return res.status(StatusCodes.OK).json({ message: '로그인에 성공하였습니다', accessToken: accessToken });
     } catch(err){
       console.error(err);
-      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).end();
+      return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: '로그인 중 오류가 발생하였습니다.' });
     }
 };
 
 const logout = async(req, res) => {
   const accessToken = req.cookies.accessToken;
 
-  if (!accessToken) {
-    return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Access Token이 만료되었습니다.' });
-  }
-
   try {
-    // Access Token 검증
     const decoded = jwt.verify(accessToken, process.env.PRIVATE_KEY);
     const email = decoded.email;
 
@@ -125,10 +122,84 @@ const logout = async(req, res) => {
     console.error(err);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: '로그아웃 중 오류가 발생하였습니다.' });
   }
+};
+
+const changePassword = async (req, res) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  if (!currentPassword || !newPassword || !confirmPassword) {
+    return res.status(StatusCodes.BAD_REQUEST).json({ message: '입력 필드는 비워둘 수 없습니다.' });
+  }
+
+  if (newPassword == currentPassword) {
+    return res.status(StatusCodes.BAD_REQUEST).json({ message: '기존과 다른 비밀번호를 설정해야 합니다.' });
+  }
+
+  if (newPassword !== confirmPassword) {
+    return res.status(StatusCodes.BAD_REQUEST).json({ message: '비밀번호가 일치하지 않습니다.' });
+  }
+
+  const accessToken = req.cookies.accessToken;
+
+  try {
+    const decoded = jwt.verify(accessToken, process.env.PRIVATE_KEY);
+    const email = decoded.email;
+
+    const [user] = await conn.query('SELECT * FROM user WHERE email = ?', [email]);
+
+    if (!user) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({ message: '사용자를 찾을 수 없습니다.' });
+    }
+
+    const hashCurrentPassword = crypto.pbkdf2Sync(currentPassword, user.salt, 10000, 10, 'sha512').toString('base64');
+    if (user.password !== hashCurrentPassword) {
+      return res.status(StatusCodes.UNAUTHORIZED).json({ message: '현재 비밀번호가 일치하지 않습니다.' });
+    }
+
+    const salt = crypto.randomBytes(10).toString('base64');
+    const hashNewPassword = crypto.pbkdf2Sync(newPassword, salt, 10000, 10, 'sha512').toString('base64');
+
+    await conn.query('UPDATE user SET password = ?, salt = ? WHERE email = ?', [hashNewPassword, salt, email]);
+
+    return res.status(StatusCodes.OK).json({ message: '비밀번호가 변경되었습니다.' });
+  } catch (err) {
+    console.error(err);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: '비밀번호 변경 중 오류가 발생하였습니다.' });
+  }
+};
+
+const deleteUser = async(req, res) => {
+  const accessToken = req.cookies.accessToken;
+  const refreshToken = req.cookies.refreshToken;
+
+  if (!refreshToken) {
+    return res.status(StatusCodes.UNAUTHORIZED).json({ message: 'Refresh Token이 없습니다.' });
 }
+  try {
+    const decoded = jwt.verify(accessToken, process.env.PRIVATE_KEY);
+    const email = decoded.email;
+
+    // Refresh Token을 데이터베이스에서 삭제
+    await conn.query('UPDATE user SET refresh_token = NULL WHERE email = ?', [email]);
+
+    // 사용자 계정 삭제
+    await conn.query('DELETE FROM user WHERE email = ?', [email]);
+
+    // 쿠키 삭제
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+
+    return res.status(StatusCodes.OK).json({ message: '회원 탈퇴 완료하였습니다.' });
+  } catch (err) {
+    console.error(err);
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({ message: '회원 탈퇴 중 오류가 발생하였습니다.' });
+  }
+};
 
 module.exports = {
   join,
   login,
-  logout
+  logout,
+  changePassword,
+  deleteUser
 };
