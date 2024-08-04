@@ -17,8 +17,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 const authRouter = require('./routes/auth');
+const mainRouter = require('./routes/main');
 
 app.use('/auth', authRouter);
+app.use('/main', mainRouter);
 
 app.listen(app.get('PORT'), ()=>{
     console.log('Server is running on port', app.get('PORT'))
