@@ -99,14 +99,14 @@ const popularSorting = async (serviceKey, page, rows) => {
     `;
     const results = await conn.query(query, [(page - 1) * rows, rows]);
 
-    console.log('Popular Sorting DB Results:', results); // 디버깅용
+    console.log('Popular Sorting DB Results:', results);
 
     if (results.length === 0) {
         return [];
     }
 
     const performanceNames = results.map(row => row.prfnm);
-    console.log('Performance Names:', performanceNames); // 디버깅용
+    console.log('Performance Names:', performanceNames);
 
     let performances = await fetchPerformanceDetails(serviceKey, performanceNames);
     console.log('performances: ', performances);
@@ -147,14 +147,14 @@ const topRatedSorting = async (serviceKey, page, rows) => {
     `;
     const results = await conn.query(query, [(page - 1) * rows, rows]);
 
-    console.log('TopRated Sorting DB Results:', results); // 디버깅용
+    console.log('TopRated Sorting DB Results:', results);
 
     if (results.length === 0) {
         return [];
     }
 
     const performanceNames = results.map(row => row.prfnm);
-    console.log('Performance Names:', performanceNames); // 디버깅용
+    console.log('Performance Names:', performanceNames);
 
     let performances = await fetchPerformanceDetails(serviceKey, performanceNames);
     console.log('performances: ', performances);
