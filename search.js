@@ -14,7 +14,7 @@ const searchPerformances = async (req, res) => {
     const categoryMap = {
         "전체": "", "연극": "AAAA", "무용": "BBBC", "대중무용": "BBBE", "서양음악": "CCCA", "한국음악": "CCCC", "대중음악": "CCCD", "복합": "EEEA", "서커스/마술": "EEEB", "뮤지컬": "GGGA"
     };
-    const rowsPerPage = 5; // 한 페이지에 표시할 공연 수
+    const rowsPerPage = 10; // 한 페이지에 표시할 공연 수
 
     try {
         const apiUrl = `http://www.kopis.or.kr/openApi/restful/pblprfr?service=${serviceKey}&shprfnm=${encodeURIComponent(prfnm)}&shcate=${categoryMap[category]}&cpage=${page}&rows=${rowsPerPage}&newsql=Y`;
@@ -34,7 +34,7 @@ const searchPerformances = async (req, res) => {
                 message: '검색 결과가 존재하지 않습니다.'
             });
         }
-        
+
         if (!Array.isArray(performances)) {
             performances = [performances];
         }
