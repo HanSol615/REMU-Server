@@ -34,8 +34,7 @@ const searchPerformances = async (req, res) => {
                 message: '검색 결과가 존재하지 않습니다.'
             });
         }
-
-        // 단일 공연 객체를 배열로 변환 (KOPIS API 특성 상 단일 결과가 객체로 반환될 수 있음)
+        
         if (!Array.isArray(performances)) {
             performances = [performances];
         }
