@@ -20,11 +20,13 @@ const authRouter = require('./routes/auth');
 const mainRouter = require('./routes/main');
 const userRouter = require('./routes/user');
 const searchRouter = require('./routes/search');
+const detailRouter = require('./routes/detail');
 
 app.use('/auth', authRouter);
 app.use('/main', mainRouter);
 app.use('/user', userRouter);
 app.use('/search', searchRouter);
+app.use('/detail', detailRouter);
 
 app.listen(app.get('PORT'), ()=>{
     console.log('Server is running on port', app.get('PORT'))
