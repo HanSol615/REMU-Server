@@ -1,10 +1,10 @@
 const express = require('express');
-const { getDetails } = require('../detail');
+const { getDetailAndReviews } = require('../detail');
 
 const router = express.Router();
 
 router.use(express.json());
 
-router.get('/', getDetails);
+router.get('/', getDetailAndReviews);
 
 module.exports = router;
